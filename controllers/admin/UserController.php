@@ -174,8 +174,24 @@ class UserController extends Controller
     {
         $model = $this->findModel($id);
 
-        if (Yii::$app->request->isPost && $model->load($this->request->post())) {
-            $date = $model -> advanced_until;
+        if (Yii::$app->request->isPost) {
+            $isForever = (bool) Yii::$app->request->post('is_forever');
+
+            if ($isForever) {
+                $model->is_advanced = 1;
+                $model->advanced_until = null; // null = бессрочно
+
+                if ($model->save(false)) {
+                    Yii::$app->session->setFlash('success', 'Пользователю выдан статус "Продвинутый" бессрочно.');
+                } else {
+                    Yii::$app->session->setFlash('error', 'Ошибка при сохранении.');
+                }
+
+                return $this->redirect(['view', 'id' => $id]);
+            }
+
+            $model->load($this->request->post());
+            $date = $model->advanced_until;
 
             if ($date && strtotime($date)) {
                 $model->is_advanced = 1;
@@ -190,7 +206,7 @@ class UserController extends Controller
                 return $this->redirect(['view', 'id' => $id]);
             }
 
-            Yii::$app->session->setFlash('error', 'Укажите корректную дату.');
+            Yii::$app->session->setFlash('error', 'Укажите корректную дату либо выберите вариант "Навсегда".');
         }
 
         return $this->render('set-advanced-date', [

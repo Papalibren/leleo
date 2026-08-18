@@ -1,0 +1,85 @@
+diff --git a/controllers/admin/UserController.php b/controllers/admin/UserController.php
+index bce7dbb..1dfd77c 100644
+--- a/controllers/admin/UserController.php
++++ b/controllers/admin/UserController.php
+@@ -174,8 +174,24 @@ class UserController extends Controller
+     {
+         $model = $this->findModel($id);
+ 
+-        if (Yii::$app->request->isPost && $model->load($this->request->post())) {
+-            $date = $model -> advanced_until;
++        if (Yii::$app->request->isPost) {
++            $isForever = (bool) Yii::$app->request->post('is_forever');
++
++            if ($isForever) {
++                $model->is_advanced = 1;
++                $model->advanced_until = null; // null = бессрочно
++
++                if ($model->save(false)) {
++                    Yii::$app->session->setFlash('success', 'Пользователю выдан статус "Продвинутый" бессрочно.');
++                } else {
++                    Yii::$app->session->setFlash('error', 'Ошибка при сохранении.');
++                }
++
++                return $this->redirect(['view', 'id' => $id]);
++            }
++
++            $model->load($this->request->post());
++            $date = $model->advanced_until;
+ 
+             if ($date && strtotime($date)) {
+                 $model->is_advanced = 1;
+@@ -190,7 +206,7 @@ class UserController extends Controller
+                 return $this->redirect(['view', 'id' => $id]);
+             }
+ 
+-            Yii::$app->session->setFlash('error', 'Укажите корректную дату.');
++            Yii::$app->session->setFlash('error', 'Укажите корректную дату либо выберите вариант "Навсегда".');
+         }
+ 
+         return $this->render('set-advanced-date', [
+diff --git a/models/User.php b/models/User.php
+index 2cdcf1c..1810e5a 100644
+--- a/models/User.php
++++ b/models/User.php
+@@ -245,7 +245,10 @@ class User extends ActiveRecord implements IdentityInterface
+     public function getStatusView()
+     {
+         if ($this->isAdvanced()) {
+-            return '<span class="text-danger">Продвинутый, до ' . $this->advanced_until . '</span>';
++            $until = $this->advanced_until
++                ? 'до ' . $this->advanced_until
++                : 'бессрочно';
++            return '<span class="text-danger">Продвинутый, ' . $until . '</span>';
+         } else {
+             return '<span class="text-info">Обычный' . '</span>';
+         }
+diff --git a/views/admin/user/set-advanced-date.php b/views/admin/user/set-advanced-date.php
+index 5da1cfe..b76dbd2 100644
+--- a/views/admin/user/set-advanced-date.php
++++ b/views/admin/user/set-advanced-date.php
+@@ -13,11 +13,22 @@ $this->params['breadcrumbs'][] = $this->title;
+ 
+     <h1><?= Html::encode($this->title) ?></h1>
+ 
+-    <p>Выберите дату, до которой пользователь будет иметь статус "Продвинутый".</p>
++    <p>Выберите вариант: до конкретной даты (например, на 1 год) либо бессрочно.</p>
+ 
+     <?php $form = ActiveForm::begin(); ?>
+ 
+-    <?= $form->field($model, 'advanced_until')->input('date') ?>
++    <div class="form-check mb-3">
++        <?= Html::checkbox('is_forever', false, [
++            'class' => 'form-check-input',
++            'id' => 'is-forever-checkbox',
++            'onchange' => 'document.getElementById("advanceduntil-field").style.display = this.checked ? "none" : "block";',
++        ]) ?>
++        <?= Html::label('Выдать навсегда (без ограничения по сроку)', 'is-forever-checkbox', ['class' => 'form-check-label']) ?>
++    </div>
++
++    <div id="advanceduntil-field">
++        <?= $form->field($model, 'advanced_until')->input('date')->hint('Например, ровно через год от сегодняшней даты — для тарифа "на 1 год".') ?>
++    </div>
+ 
+     <div class="form-group">
+         <?= Html::submitButton('Сохранить', ['class' => 'btn btn-success']) ?>

@@ -245,7 +245,10 @@ class User extends ActiveRecord implements IdentityInterface
     public function getStatusView()
     {
         if ($this->isAdvanced()) {
-            return '<span class="text-danger">Продвинутый, до ' . $this->advanced_until . '</span>';
+            $until = $this->advanced_until
+                ? 'до ' . $this->advanced_until
+                : 'бессрочно';
+            return '<span class="text-danger">Продвинутый, ' . $until . '</span>';
         } else {
             return '<span class="text-info">Обычный' . '</span>';
         }

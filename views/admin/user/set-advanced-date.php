@@ -13,11 +13,22 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <h1><?= Html::encode($this->title) ?></h1>
 
-    <p>Выберите дату, до которой пользователь будет иметь статус "Продвинутый".</p>
+    <p>Выберите вариант: до конкретной даты (например, на 1 год) либо бессрочно.</p>
 
     <?php $form = ActiveForm::begin(); ?>
 
-    <?= $form->field($model, 'advanced_until')->input('date') ?>
+    <div class="form-check mb-3">
+        <?= Html::checkbox('is_forever', false, [
+            'class' => 'form-check-input',
+            'id' => 'is-forever-checkbox',
+            'onchange' => 'document.getElementById("advanceduntil-field").style.display = this.checked ? "none" : "block";',
+        ]) ?>
+        <?= Html::label('Выдать навсегда (без ограничения по сроку)', 'is-forever-checkbox', ['class' => 'form-check-label']) ?>
+    </div>
+
+    <div id="advanceduntil-field">
+        <?= $form->field($model, 'advanced_until')->input('date')->hint('Например, ровно через год от сегодняшней даты — для тарифа "на 1 год".') ?>
+    </div>
 
     <div class="form-group">
         <?= Html::submitButton('Сохранить', ['class' => 'btn btn-success']) ?>
