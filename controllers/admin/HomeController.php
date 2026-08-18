@@ -8,6 +8,7 @@ use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 use app\models\Auth;
+use app\models\User;
 use yii\filters\AccessControl;
 
 class HomeController extends Controller
@@ -48,14 +49,16 @@ class HomeController extends Controller
 
     public function actionIndex()
     {
+        $recentUsers = User::find()
+            ->where(['is_admin' => 0])
+            ->andWhere(['>=', 'created_at', date('Y-m-d H:i:s', strtotime('-7 days'))])
+            ->orderBy(['id' => SORT_DESC])
+            ->all();
 
-        return $this->render('index');
+        return $this->render('index', [
+            'recentUsers' => $recentUsers,
+        ]);
     }
 
 
 }
-
-
-
-
-
