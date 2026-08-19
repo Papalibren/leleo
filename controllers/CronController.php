@@ -4,6 +4,7 @@ namespace app\controllers;
 
 use Yii;
 use yii\web\Controller;
+use yii\web\ForbiddenHttpException;
 use app\models\User;
 use yii\helpers\Console;
 use app\models\Cat;
@@ -11,9 +12,24 @@ use app\models\Cat;
 class CronController extends Controller
 {
 
+    /**
+     * Защита от вызова кем попало: URL вида /cron/users?key=СЕКРЕТНЫЙ_КЛЮЧ
+     * Ключ задаётся в config/params.php -> 'cronSecretKey'
+     */
+    private function checkSecret()
+    {
+        $expected = Yii::$app->params['cronSecretKey'] ?? null;
+        $given = Yii::$app->request->get('key');
+
+        if (empty($expected) || $given !== $expected) {
+            throw new ForbiddenHttpException('Доступ запрещён.');
+        }
+    }
 
     public function actionUsers()
     {
+        $this->checkSecret();
+
         $now = date('Y-m-d H:i:s');
         $count = 0;
 

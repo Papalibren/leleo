@@ -6,6 +6,7 @@ return [
     'supportEmail' => 'support@example.com',
     'senderEmail' => 'noreply@example.com',
     'senderName' => 'Example.com mailer',
+    'cronSecretKey' => 'cron',
     'subtitle' => 'base',
     'btn-form-color' => 'primary',
     'bg-form-color' => 'light',
