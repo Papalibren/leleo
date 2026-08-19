@@ -41,10 +41,13 @@ $user =  Yii::$app->user->identity;
 
     <?= $form->field($model, 'breed')->dropDownList([
         'Шпиц' => 'Шпиц',
-        'Тибетский мастиф' => 'Тибетский мастиф',
     ], ['prompt' => 'Выбрать', 'id' => 'dog-breed']) ?>
 
-    <?= $form->field($model, 'birth_date')->Input('date') ?>
+    <?php if (isset($this->params['action']) && $this->params['action'] === 'create'): ?>
+
+        <?= $form->field($model, 'birth_date')->Input('date') ?>
+
+    <?php endif ?>
 
     <?= $form->field($model, 'gender')->dropDownList(['кобель' => 'Кобель', 'сука' => 'Сука'], ['prompt' => '']) ?>
 
@@ -59,6 +62,17 @@ $user =  Yii::$app->user->identity;
         ) ?>
 
         <?= $form->field($model, 'pedigree_number')->textInput(['maxlength' => true]) ?>
+
+    <?php else: ?>
+
+        <div class="alert alert-secondary">
+            <strong>Кличка:</strong> <?= Html::encode($model->name) ?><br>
+            <strong>Транслит:</strong> <?= Html::encode($model->translit) ?><br>
+            <strong>Окрас:</strong> <?= Html::encode($dog_colors[$model->color_id] ?? '—') ?><br>
+            <strong>Номер родословной:</strong> <?= Html::encode($model->pedigree_number) ?><br>
+            <strong>Дата рождения:</strong> <?= Html::encode($model->birth_date ?: '—') ?>
+            <div class="small text-muted mt-1">Эти поля сверяются с документами и не редактируются после создания.</div>
+        </div>
 
     <?php endif ?>
 
@@ -219,6 +233,14 @@ $user =  Yii::$app->user->identity;
         <?= Html::encode($model->getAttributeLabel('father_id')) ?>
     </label>
     <div class="col-sm-8 d-flex flex-column gap-1 align-items-start dog-father_id-mx-box">
+        <?php if ($model->father_id): ?>
+            <div class="small mb-1">
+                Сейчас указан:
+                <?= $model->father
+                    ? Html::a(Html::encode($model->father->name), ['/dogs/view', 'id' => $model->father_id, 'translit' => $model->father->translit], ['target' => '_blank'])
+                    : ('ID ' . Html::encode($model->father_id) . ' (не найден)') ?>
+            </div>
+        <?php endif ?>
         <?= Html::activeInput('text', $model, 'father_id', [
             'class' => 'form-control',
             'placeholder' => 'ID или кличка',
@@ -244,6 +266,14 @@ $user =  Yii::$app->user->identity;
         <?= Html::encode($model->getAttributeLabel('mother_id')) ?>
     </label>
     <div class="col-sm-8 d-flex flex-column gap-2 align-items-start dog-mother_id-mx-box">
+        <?php if ($model->mother_id): ?>
+            <div class="small mb-1">
+                Сейчас указана:
+                <?= $model->mother
+                    ? Html::a(Html::encode($model->mother->name), ['/dogs/view', 'id' => $model->mother_id, 'translit' => $model->mother->translit], ['target' => '_blank'])
+                    : ('ID ' . Html::encode($model->mother_id) . ' (не найдена)') ?>
+            </div>
+        <?php endif ?>
         <?= Html::activeInput('text', $model, 'mother_id', [
             'class' => 'form-control',
             'id' => 'dog-mother_id',

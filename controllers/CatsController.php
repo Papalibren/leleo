@@ -88,6 +88,19 @@ class CatsController extends Controller
     public function actionEdit($id)
     {
         $model = $this->findModel($id);
+
+        // Проверка прав: если у животного есть владелец — редактировать может
+        // только он сам (или администратор). Если владельца нет — доступно всем залогиненным.
+        $currentUserId = Yii::$app->user->id;
+        $isAdmin = !Yii::$app->user->isGuest && Yii::$app->user->identity->isAdmin();
+
+        if (!empty($model->owner_id) && $model->owner_id != $currentUserId && !$isAdmin) {
+            throw new \yii\web\ForbiddenHttpException('У этого животного есть владелец — редактировать может только он.');
+        }
+
+        // Поля кличка/окрас/номер родословной/дата рождения после создания не меняются.
+        $model->scenario = Cat::SCENARIO_UPDATE;
+
         $model->is_active = 0;
         $photos = new CatPhotos();
         $documents = new CatDocuments();
