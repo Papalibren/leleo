@@ -248,6 +248,14 @@ $user =  Yii::$app->user->identity;
         <?= Html::encode($model->getAttributeLabel('father_id')) ?>
     </label>
     <div class="col-sm-8 d-flex flex-column gap-1 align-items-start dog-father_id-mx-box">
+        <?php if ($model->father_id): ?>
+            <div class="small mb-1">
+                Сейчас указан:
+                <?= $model->father
+                    ? Html::a(Html::encode($model->father->name), ['/dogs/view', 'id' => $model->father_id, 'translit' => $model->father->translit], ['target' => '_blank'])
+                    : ('ID ' . Html::encode($model->father_id) . ' (не найден)') ?>
+            </div>
+        <?php endif ?>
         <?= Html::activeInput('text', $model, 'father_id', [
             'class' => 'form-control',
             'placeholder' => 'ID или кличка',
@@ -273,6 +281,14 @@ $user =  Yii::$app->user->identity;
         <?= Html::encode($model->getAttributeLabel('mother_id')) ?>
     </label>
     <div class="col-sm-8 d-flex flex-column gap-2 align-items-start dog-mother_id-mx-box">
+        <?php if ($model->mother_id): ?>
+            <div class="small mb-1">
+                Сейчас указана:
+                <?= $model->mother
+                    ? Html::a(Html::encode($model->mother->name), ['/dogs/view', 'id' => $model->mother_id, 'translit' => $model->mother->translit], ['target' => '_blank'])
+                    : ('ID ' . Html::encode($model->mother_id) . ' (не найдена)') ?>
+            </div>
+        <?php endif ?>
         <?= Html::activeInput('text', $model, 'mother_id', [
             'class' => 'form-control',
             'id' => 'dog-mother_id',
