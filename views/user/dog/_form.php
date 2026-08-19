@@ -43,26 +43,38 @@ $user =  Yii::$app->user->identity;
 
     <?= $form->field($model, 'breed')->dropDownList([
         'Шпиц' => 'Шпиц',
-        'Тибетский Мастиф' => 'Тибетский Мастиф',
     ], ['prompt' => 'Выбрать']) ?>
 
+    <?php if (isset($this->params['action']) && $this->params['action'] === 'create'): ?>
 
-    <?= $form->field($model, 'color_id')->dropDownList(
-        [], // изначально пустой список
-        [
-            'prompt' => 'Сначала выберите породу',
-            'id' => 'dog-color-id'
-        ]
-    ) ?>
+        <?= $form->field($model, 'color_id')->dropDownList(
+            [], // изначально пустой список
+            [
+                'prompt' => 'Сначала выберите породу',
+                'id' => 'dog-color-id'
+            ]
+        ) ?>
 
+        <?= $form->field($model, 'birth_date')->Input('date') ?>
 
-    <?= $form->field($model, 'birth_date')->Input('date') ?>
+    <?php endif ?>
 
     <?= $form->field($model, 'gender')->dropDownList(['кобель' => 'Кобель', 'сука' => 'Сука'], ['prompt' => '']) ?>
 
     <?php if (isset($this->params['action']) && $this->params['action'] === 'create'): ?>
 
         <?= $form->field($model, 'pedigree_number')->textInput(['maxlength' => true]) ?>
+
+    <?php else: ?>
+
+        <div class="alert alert-secondary">
+            <strong>Кличка:</strong> <?= Html::encode($model->name) ?><br>
+            <strong>Транслит:</strong> <?= Html::encode($model->translit) ?><br>
+            <strong>Окрас:</strong> <?= Html::encode($dog_colors[$model->color_id] ?? '—') ?><br>
+            <strong>Номер родословной:</strong> <?= Html::encode($model->pedigree_number) ?><br>
+            <strong>Дата рождения:</strong> <?= Html::encode($model->birth_date ?: '—') ?>
+            <div class="small text-muted mt-1">Эти поля сверяются с документами и не редактируются после создания.</div>
+        </div>
 
     <?php endif ?>
 

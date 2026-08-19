@@ -31,9 +31,7 @@ class CatController extends Controller
             [
                 'verbs' => [
                     'class' => VerbFilter::className(),
-                    'actions' => [
-                        'delete' => ['POST'],
-                    ],
+                    'actions' => [],
                 ],
                 'access' => [
                     'class' => AccessControl::class,
@@ -192,6 +190,21 @@ class CatController extends Controller
     public function actionUpdate($id)
     {
         $model = $this->findModel($id);
+
+        // Проверка прав: если у животного есть владелец — редактировать может
+        // только он сам (или администратор). Если владельца нет — редактировать
+        // может любой залогиненный пользователь (чтобы дополнять недостающую информацию).
+        $currentUserId = Yii::$app->user->id;
+        $isAdmin = !Yii::$app->user->isGuest && Yii::$app->user->identity->isAdmin();
+
+        if (!empty($model->owner_id) && $model->owner_id != $currentUserId && !$isAdmin) {
+            throw new \yii\web\ForbiddenHttpException('У этого животного есть владелец — редактировать может только он.');
+        }
+
+        // Поля кличка/окрас/номер родословной/дата рождения после создания не меняются —
+        // сверяются с документами один раз при модерации.
+        $model->scenario = Cat::SCENARIO_UPDATE;
+
         $photos = new CatPhotos();
         $documents = new CatDocuments();
 
@@ -275,18 +288,9 @@ class CatController extends Controller
     }
 
     /**
-     * Deletes an existing Cat model.
-     * If deletion is successful, the browser will be redirected to the 'index' page.
-     * @param int $id ID
-     * @return \yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
+     * Удаление животных доступно ТОЛЬКО администратору — см. controllers/admin/CatController.
+     * Здесь этого действия намеренно нет (раньше было открыто без проверки прав — критическая дыра).
      */
-    public function actionDelete($id)
-    {
-        $this->findModel($id)->delete();
-
-        return $this->redirect(['index']);
-    }
 
     /**
      * Finds the Cat model based on its primary key value.

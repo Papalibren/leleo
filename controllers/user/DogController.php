@@ -30,9 +30,7 @@ class DogController extends Controller
             [
                 'verbs' => [
                     'class' => VerbFilter::className(),
-                    'actions' => [
-                        'delete' => ['POST'],
-                    ],
+                    'actions' => [],
                 ],
                 'access' => [
                     'class' => AccessControl::class,
@@ -159,24 +157,28 @@ class DogController extends Controller
         //du($model -> getAttributes());
 
         if ($this->request->isPost) {
-            if ($model->load($this->request->post()) && $model->save()) {
+            if ($model->load($this->request->post())) {
+                $model->is_active = 0; // Отправляем на модерацию (раньше не выставлялось вовсе)
 
-                if ($model->is_for_sale == 1 ||  $model->is_for_mating == 1) {
-                    $model->is_ad_active = 1;
-                    $model->save(false);
-                }
-                $photos->imageFiles = UploadedFile::getInstances($photos, 'imageFiles');
-                $photos->dog_id = $model->id;
-                $documents->documentFiles = UploadedFile::getInstances($documents, 'documentFiles');
-                $documents->dog_id = $model->id;
+                if ($model->save()) {
+                    if ($model->is_for_sale == 1 ||  $model->is_for_mating == 1) {
+                        $model->is_ad_active = 1;
+                        $model->save(false);
+                    }
+                    $photos->imageFiles = UploadedFile::getInstances($photos, 'imageFiles');
+                    $photos->dog_id = $model->id;
+                    $documents->documentFiles = UploadedFile::getInstances($documents, 'documentFiles');
+                    $documents->dog_id = $model->id;
 
-                if ($photos->uploadMultiple()) {
-                    Yii::$app->session->setFlash('success', 'Фотографии успешно загружены');
+                    if ($photos->uploadMultiple()) {
+                        Yii::$app->session->setFlash('success', 'Фотографии успешно загружены');
+                    }
+                    if ($documents->uploadMultiple()) {
+                        Yii::$app->session->setFlash('success', 'Документы успешно загружены');
+                    }
+                    Yii::$app->session->setFlash('success', 'Собака успешно создана и отправлена на модерацию.');
+                    return $this->redirect(['view', 'id' => $model->id]);
                 }
-                if ($documents->uploadMultiple()) {
-                    Yii::$app->session->setFlash('success', 'Документы успешно загружены');
-                }
-                return $this->redirect(['view', 'id' => $model->id]);
             }
         } else {
             $model->loadDefaultValues();
@@ -199,27 +201,45 @@ class DogController extends Controller
     public function actionUpdate($id)
     {
         $model = $this->findModel($id);
-        $photos = new dogPhotos();
-        $documents = new dogDocuments();
 
-        $existingPhotos = dogPhotos::find()->where(['dog_id' => $id])->all();
+        // Проверка прав: если у собаки есть владелец — редактировать может
+        // только он сам (или администратор). Если владельца нет — редактировать
+        // может любой залогиненный пользователь.
+        $currentUserId = Yii::$app->user->id;
+        $isAdmin = !Yii::$app->user->isGuest && Yii::$app->user->identity->isAdmin();
+
+        if (!empty($model->owner_id) && $model->owner_id != $currentUserId && !$isAdmin) {
+            throw new \yii\web\ForbiddenHttpException('У этой собаки есть владелец — редактировать может только он.');
+        }
+
+        // Поля кличка/окрас/номер родословной/дата рождения после создания не меняются.
+        $model->scenario = Dog::SCENARIO_UPDATE;
+
+        $photos = new DogPhotos();
+        $documents = new DogDocuments();
+
+        $existingPhotos = DogPhotos::find()->where(['dog_id' => $id])->all();
 
 
         if ($this->request->isPost) {
-            if ($model->load($this->request->post()) && $model->save()) {
+            if ($model->load($this->request->post())) {
+                $model->is_active = 0; // Отправляем на повторную модерацию (раньше не выставлялось вовсе)
 
-                $photos->imageFiles = UploadedFile::getInstances($photos, 'imageFiles');
-                $photos->dog_id = $model->id;
-                $documents->documentFiles = UploadedFile::getInstances($documents, 'documentFiles');
-                $documents->dog_id = $model->id;
+                if ($model->save()) {
+                    $photos->imageFiles = UploadedFile::getInstances($photos, 'imageFiles');
+                    $photos->dog_id = $model->id;
+                    $documents->documentFiles = UploadedFile::getInstances($documents, 'documentFiles');
+                    $documents->dog_id = $model->id;
 
-                if ($photos->uploadMultiple()) {
-                    Yii::$app->session->setFlash('success', 'Фотографии успешно загружены');
+                    if ($photos->uploadMultiple()) {
+                        Yii::$app->session->setFlash('success', 'Фотографии успешно загружены');
+                    }
+                    if ($documents->uploadMultiple()) {
+                        Yii::$app->session->setFlash('success', 'Документы успешно загружены');
+                    }
+                    Yii::$app->session->setFlash('success', 'Изменения сохранены и отправлены на модерацию.');
+                    return $this->redirect(['view', 'id' => $model->id]);
                 }
-                if ($documents->uploadMultiple()) {
-                    Yii::$app->session->setFlash('success', 'Документы успешно загружены');
-                }
-                return $this->redirect(['view', 'id' => $model->id]);
             }
         } else {
             $model->loadDefaultValues();
@@ -275,18 +295,9 @@ class DogController extends Controller
 
 
     /**
-     * Deletes an existing dog model.
-     * If deletion is successful, the browser will be redirected to the 'index' page.
-     * @param int $id ID
-     * @return \yii\web\Response
-     * @throws NotFoundHttpException if the model cannot be found
+     * Удаление животных доступно ТОЛЬКО администратору — см. controllers/admin/DogController.
+     * Здесь этого действия намеренно нет (раньше было открыто без проверки прав — критическая дыра).
      */
-    public function actionDelete($id)
-    {
-        $this->findModel($id)->delete();
-
-        return $this->redirect(['index']);
-    }
 
     /**
      * Finds the dog model based on its primary key value.

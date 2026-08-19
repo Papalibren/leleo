@@ -8,6 +8,7 @@ use yii\helpers\Url;
 class Cat extends \yii\db\ActiveRecord
 {
     const SCENARIO_OTHER = 'other'; // Сценарий при добавлении другим пользователем
+    const SCENARIO_UPDATE = 'update'; // Сценарий редактирования существующего животного (защита полей из документов)
 
     public static function tableName()
     {
@@ -18,6 +19,14 @@ class Cat extends \yii\db\ActiveRecord
     {
         $scenarios = parent::scenarios();
         $scenarios[self::SCENARIO_OTHER] = ['name', 'translit', 'gender', 'color_id', 'pedigree_number'];
+        // Поля, которые нельзя менять после создания (сверяются с документами при модерации)
+        $scenarios[self::SCENARIO_UPDATE] = [
+            'breed', 'gender', 'chip',
+            'is_for_mating', 'mating_contacts',
+            'is_for_sale', 'sale_contacts', 'price',
+            'owner_id', 'breeder_id', 'father_id', 'mother_id',
+            'titles', 'additional_info',
+        ];
         return $scenarios;
     }
 
